@@ -58,16 +58,7 @@ namespace PrimaveraPatcher
                 //First log entry for when program started
                 StringBuilder firstLog = new StringBuilder();
 
-                if (aMailServer != "")
-                    firstLog.Append("Starting up on: ");
-                firstLog.Append(DateTime.Now.Month);
-                firstLog.Append("/");
-                firstLog.Append(DateTime.Now.Day);
-                firstLog.Append(" at ");
-                firstLog.Append(DateTime.Now.Hour);
-                firstLog.Append(":");
-                firstLog.Append(DateTime.Now.Minute);
-                logFile.LogDetail(firstLog.ToString());
+                logFile.LogDetail("Starting PrimaveraPatcher...");
 
 
                 outputLabel.Text = "";  //Empties the output label
@@ -105,19 +96,19 @@ namespace PrimaveraPatcher
                     MessageBox.Show(ex.Message);
                     logFile.LogError(ex.Message);
                 }
-
-                //Only save and mail if there was an error
-                if (logFile.getLog().Contains("ERROR"))
-                {
-                    logFile.SaveLog();
-                    logFile.MailLog();
-                }
             } else
             {
                 //Show and mail that we had an error with the config file
                 MessageBox.Show("Error in getting config");
                 logFile.MailLog();
                 this.Close();
+            }
+
+            //Only save and mail if there was an error or in debugging
+            if (logFile.getLog().Contains("ERROR") || Convert.ToBoolean(aDebug))
+            {
+                logFile.MailLog();
+                logFile.SaveLog();
             }
         }
 
@@ -137,6 +128,10 @@ namespace PrimaveraPatcher
 
             //Create a web browser
             WebBrowser wBrowser = new WebBrowser();
+
+            //Surpress script error
+            wBrowser.ScriptErrorsSuppressed = true;
+
             //Navigate to the Oracle URL
             wBrowser.Navigate(aUpdatePage);
 
@@ -146,6 +141,7 @@ namespace PrimaveraPatcher
                 Application.DoEvents();
             }
 
+            //Save the entire webpage into pageHTML
             pageHTML = wBrowser.DocumentText;
 
             //we create a new list of decimals with all the patch numbers
