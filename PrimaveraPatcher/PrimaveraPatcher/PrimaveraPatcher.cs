@@ -2,7 +2,7 @@
 ///       latest version on Oracle website. Allows user to
 ///       be directed to page to download latest version
 ///       (optional feature)
-///@version 2016.05.18
+///@version 2016.05.23
 
 using System;
 using System.IO;
@@ -53,13 +53,12 @@ namespace PrimaveraPatcher
             if (GetConfigSettings(ref logFile)) {
 
                 //Set up the log file
-                logFile = new Log(aMailServer, aFrom, aCC, aTo, aSubject);
+                logFile = new Log();
 
                 //First log entry for when program started
                 StringBuilder firstLog = new StringBuilder();
 
-                logFile.LogDetail("Starting PrimaveraPatcher...");
-
+                logFile.AddToLog("Starting PrimaveraPatcher...");
 
                 outputLabel.Text = "";  //Empties the output label
                 updateLink.Text = "";   //Empties the link label
@@ -87,28 +86,29 @@ namespace PrimaveraPatcher
                     {
                         //Not possible unless error
                         outputLabel.Text = "#DEBUG#\nSHOULD NEVER GET HERE!";
-                        logFile.LogError("Current patch newer than latest");
+                        logFile.AddToLog("Current patch newer than latest",true);
                     }
 
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.Message);
-                    logFile.LogError(ex.Message);
+                    logFile.AddToLog(ex.Message, true);
                 }
-            } else
-            {
-                //Show and mail that we had an error with the config file
-                MessageBox.Show("Error in getting config");
-                logFile.MailLog();
-                this.Close();
-            }
 
-            //Only save and mail if there was an error or in debugging
-            if (logFile.getLog().Contains("ERROR") || Convert.ToBoolean(aDebug))
-            {
-                logFile.MailLog();
+                //Only save and mail if debugging or if there is an error
+                if (Convert.ToBoolean(aDebug) || logFile.GetLog().Contains("ERROR") )
+                {
+                    //Mail based on app settings
+                    logFile.MailLog(aMailServer, aFrom, aTo, aSubject);
+                    //Save log locally
+                    logFile.SaveLog();
+                }
+            } else {
+                //Show that we had an error with the config file
+                MessageBox.Show("Error in getting config");
                 logFile.SaveLog();
+                this.Close();
             }
         }
 
@@ -180,7 +180,7 @@ namespace PrimaveraPatcher
                 {
                     //Error handling
                     MessageBox.Show(ex.Message);
-                    logFile.LogError(ex.Message);
+                    logFile.AddToLog(ex.Message, true);
                 }
             }
 
@@ -244,8 +244,8 @@ namespace PrimaveraPatcher
             if (aValue == null)
             {
                 //Log the key lookup used
-                logFile.LogError("Error retrieving core " + aSettingKey +
-                                    " configuration setting; application cannot start.");
+                logFile.AddToLog("Error retrieving core " + aSettingKey +
+                                    " configuration setting; application cannot start.", true);
                 //Could not retrieve info
                 retVal = false;
             }
